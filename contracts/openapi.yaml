@@ -1,0 +1,582 @@
+openapi: 3.1.0
+info:
+  title: Independent Auto-GTM Preview API
+  version: 0.1.0
+  description: >-
+    Proposed clean-room contract for an independently implemented B2B prospecting
+    and outreach product. These endpoints are not Explee's private API.
+servers:
+  - url: https://api.example.com
+    description: Placeholder production origin
+tags:
+  - name: Preview
+  - name: Discovery
+  - name: Drafts
+  - name: Campaigns
+  - name: Webhooks
+paths:
+  /v1/company-search:
+    post:
+      tags: [Preview]
+      summary: Recognize companies by domain or name
+      operationId: companySearch
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [query]
+              properties:
+                query:
+                  type: string
+                  minLength: 2
+                  maxLength: 253
+      responses:
+        '200':
+          description: Matching candidates
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [candidates]
+                properties:
+                  candidates:
+                    type: array
+                    maxItems: 20
+                    items:
+                      $ref: '#/components/schemas/CompanyCandidate'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+  /v1/previews:
+    post:
+      tags: [Preview]
+      summary: Start or reuse a preview
+      operationId: createPreview
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [kind, domain]
+                  properties:
+                    kind: { const: domain }
+                    domain: { type: string, maxLength: 253 }
+                - type: object
+                  required: [kind, offering, ideal_customer, geography]
+                  properties:
+                    kind: { const: brief }
+                    offering: { type: string, minLength: 8, maxLength: 3000 }
+                    ideal_customer: { type: string, minLength: 8, maxLength: 3000 }
+                    geography: { type: string, minLength: 2, maxLength: 1000 }
+      responses:
+        '202':
+          description: Preview accepted or reused
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreviewStart'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /v1/previews/{previewId}:
+    get:
+      tags: [Preview]
+      summary: Get public-safe preview state
+      operationId: getPreview
+      parameters:
+        - $ref: '#/components/parameters/PreviewId'
+      responses:
+        '200':
+          description: Preview state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preview'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/previews/{previewId}/events:
+    get:
+      tags: [Preview]
+      summary: Stream durable stage events
+      operationId: previewEvents
+      parameters:
+        - $ref: '#/components/parameters/PreviewId'
+        - in: header
+          name: Last-Event-ID
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: SSE stream with phase.started, phase.progress, result.partial, phase.completed and run.completed
+          content:
+            text/event-stream:
+              schema: { type: string }
+  /v1/previews/{previewId}/segments:
+    get:
+      tags: [Preview]
+      summary: List generated target segments
+      operationId: listSegments
+      parameters:
+        - $ref: '#/components/parameters/PreviewId'
+      responses:
+        '200':
+          description: Target segments
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [segments]
+                properties:
+                  segments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Segment'
+  /v1/previews/{previewId}/segments/{segmentId}/discover:
+    post:
+      tags: [Discovery]
+      summary: Start or reuse a discovery run
+      operationId: discoverSegment
+      parameters:
+        - $ref: '#/components/parameters/PreviewId'
+        - $ref: '#/components/parameters/SegmentId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                strict_geography: { type: boolean, default: true }
+                max_results: { type: integer, minimum: 1, maximum: 1000, default: 100 }
+      responses:
+        '202':
+          description: Run created or reused
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryRun'
+  /v1/runs/{runId}/accounts:
+    get:
+      tags: [Discovery]
+      summary: Read ranked account results
+      operationId: listAccounts
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Result page
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, has_more]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProspectAccount'
+                  next_cursor: { type: [string, 'null'] }
+                  has_more: { type: boolean }
+  /v1/runs/{runId}/people:
+    get:
+      tags: [Discovery]
+      summary: Read professional person results
+      operationId: listPeople
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Result page
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, has_more]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Person'
+                  next_cursor: { type: [string, 'null'] }
+                  has_more: { type: boolean }
+  /v1/previews/{previewId}/drafts:
+    post:
+      tags: [Drafts]
+      summary: Generate a grounded preview draft
+      operationId: generateDraft
+      parameters:
+        - $ref: '#/components/parameters/PreviewId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [segment_id, person_id]
+              properties:
+                segment_id: { type: string }
+                person_id: { type: string }
+                preferred_language: { type: [string, 'null'], default: null }
+      responses:
+        '200':
+          description: Preview draft, not permission to send
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Draft'
+  /v1/drafts/{draftId}:
+    patch:
+      tags: [Drafts]
+      summary: Save a draft edit with optimistic version check
+      operationId: updateDraft
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: draftId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expected_version]
+              properties:
+                expected_version: { type: integer, minimum: 1 }
+                subject: { type: string, maxLength: 200 }
+                body: { type: string, maxLength: 10000 }
+      responses:
+        '200':
+          description: New draft revision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Draft'
+        '409':
+          description: Version conflict, reload latest revision
+  /v1/campaigns:
+    post:
+      tags: [Campaigns]
+      summary: Prepare campaign from preview
+      operationId: createCampaign
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [preview_id, segment_ids, daily_budget_minor, currency]
+              properties:
+                preview_id: { type: string }
+                segment_ids: { type: array, minItems: 1, items: { type: string } }
+                daily_budget_minor: { type: integer, minimum: 0 }
+                currency: { type: string, pattern: '^[A-Z]{3}$' }
+                calendar_url: { type: [string, 'null'], format: uri }
+      responses:
+        '201':
+          description: Prepared, not yet activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+  /v1/campaigns/{campaignId}/activate:
+    post:
+      tags: [Campaigns]
+      summary: Activate with recorded authorization and billing
+      operationId: activateCampaign
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [authorization_id, billing_account_id, idempotency_key]
+              properties:
+                authorization_id: { type: string }
+                billing_account_id: { type: string }
+                idempotency_key: { type: string, minLength: 12 }
+      responses:
+        '200':
+          description: Active campaign
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+        '409':
+          description: Preconditions fail, return specific failed checks
+        '402':
+          description: Billing setup incomplete
+  /v1/campaigns/{campaignId}/pause:
+    post:
+      tags: [Campaigns]
+      summary: Pause future sends
+      operationId: pauseCampaign
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+      responses:
+        '200':
+          description: Campaign paused
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+  /v1/campaigns/{campaignId}/overview:
+    get:
+      tags: [Campaigns]
+      summary: Operational campaign metrics
+      operationId: campaignOverview
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+      responses:
+        '200':
+          description: Campaign metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verified_contacts: { type: integer }
+                  sent: { type: integer }
+                  delivered: { type: integer }
+                  positive_replies: { type: integer }
+                  booked_meetings: { type: integer }
+                  spend_minor: { type: integer }
+                  currency: { type: string }
+  /v1/webhooks/billing:
+    post:
+      tags: [Webhooks]
+      summary: Signed payment provider callback
+      operationId: billingWebhook
+      security: []
+      parameters:
+        - in: header
+          name: X-Provider-Signature
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Event accepted or duplicate safely ignored }
+        '400': { description: Invalid signature or payload }
+  /v1/webhooks/email:
+    post:
+      tags: [Webhooks]
+      summary: Signed email delivery or reply callback
+      operationId: emailWebhook
+      security: []
+      parameters:
+        - in: header
+          name: X-Provider-Signature
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Event accepted or duplicate safely ignored }
+        '400': { description: Invalid signature or payload }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PreviewId:
+      in: path
+      name: previewId
+      required: true
+      schema: { type: string }
+    SegmentId:
+      in: path
+      name: segmentId
+      required: true
+      schema: { type: string }
+    RunId:
+      in: path
+      name: runId
+      required: true
+      schema: { type: string }
+    CampaignId:
+      in: path
+      name: campaignId
+      required: true
+      schema: { type: string }
+    Cursor:
+      in: query
+      name: cursor
+      required: false
+      schema: { type: string }
+    Limit:
+      in: query
+      name: limit
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+  responses:
+    ValidationError:
+      description: Validation failure
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    RateLimitError:
+      description: Rate limited
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    NotFound:
+      description: Not found or preview token no longer valid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+  schemas:
+    ApiError:
+      type: object
+      required: [code, message, retryable, request_id]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        retryable: { type: boolean }
+        request_id: { type: string }
+        retry_after_seconds: { type: [integer, 'null'] }
+        field_errors:
+          type: object
+          additionalProperties: { type: string }
+    CompanyCandidate:
+      type: object
+      required: [id, domain, name, description, match_confidence]
+      properties:
+        id: { type: string }
+        domain: { type: string }
+        name: { type: string }
+        description: { type: string }
+        favicon_url: { type: [string, 'null'], format: uri }
+        match_confidence: { type: string, enum: [high, medium, low] }
+    PreviewStart:
+      type: object
+      required: [id, status, reused, read_token]
+      properties:
+        id: { type: string }
+        status: { type: string }
+        reused: { type: boolean }
+        read_token: { type: string, description: Short-lived scoped read token }
+        event_url: { type: string }
+    Preview:
+      type: object
+      required: [id, status, input_kind, phase, coverage]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [created, researching, partial, preview_ready, failed, activation_pending, active] }
+        input_kind: { type: string, enum: [domain, brief] }
+        phase: { type: string }
+        company:
+          $ref: '#/components/schemas/CompanyCandidate'
+        segments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Segment'
+        coverage:
+          type: object
+          required: [accounts_found, people_found, verified_emails]
+          properties:
+            accounts_found: { type: integer, minimum: 0 }
+            people_found: { type: integer, minimum: 0 }
+            verified_emails: { type: integer, minimum: 0 }
+        cached_at: { type: [string, 'null'], format: date-time }
+    Segment:
+      type: object
+      required: [id, label, buyer_type, geography, criteria, exclusions, version]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        buyer_type: { type: string, enum: [company, individual] }
+        geography: { type: array, items: { type: string } }
+        use_case: { type: string }
+        pain: { type: string }
+        criteria: { type: array, items: { type: string } }
+        exclusions: { type: array, items: { type: string } }
+        estimated_accounts: { type: [integer, 'null'], minimum: 0 }
+        estimate_label: { type: string, enum: [estimated, verified, unknown] }
+        decision_maker_brief: { type: string }
+        version: { type: integer, minimum: 1 }
+    DiscoveryRun:
+      type: object
+      required: [id, segment_id, status, reused]
+      properties:
+        id: { type: string }
+        segment_id: { type: string }
+        status: { type: string, enum: [queued, running, partial, completed, failed, cancelled] }
+        reused: { type: boolean }
+        event_url: { type: string }
+    ProspectAccount:
+      type: object
+      required: [id, name, country, fit_status, fit_reasons]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        domain: { type: [string, 'null'] }
+        description: { type: [string, 'null'] }
+        country: { type: [string, 'null'] }
+        employee_estimate: { type: [integer, 'null'] }
+        monthly_traffic_estimate: { type: [integer, 'null'] }
+        fit_status: { type: string, enum: [qualified, excluded, uncertain] }
+        fit_reasons: { type: array, items: { type: string } }
+        data_confidence: { type: string, enum: [high, medium, low, unknown] }
+    Person:
+      type: object
+      required: [id, name, company_id, title, contact_status]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        company_id: { type: string }
+        title: { type: string }
+        profile_url: { type: [string, 'null'], format: uri }
+        country: { type: [string, 'null'] }
+        contact_status: { type: string, enum: [unknown, finding, verified, risky, not_found, suppressed] }
+        role_confidence: { type: string, enum: [high, medium, low, unknown] }
+    Draft:
+      type: object
+      required: [id, subject, body, language, language_reason, evidence_refs, version, send_eligible]
+      properties:
+        id: { type: string }
+        subject: { type: string }
+        body: { type: string }
+        language: { type: string }
+        language_reason: { type: string }
+        evidence_refs: { type: array, items: { type: string } }
+        version: { type: integer, minimum: 1 }
+        send_eligible: { type: boolean }
+        send_blockers: { type: array, items: { type: string } }
+    Campaign:
+      type: object
+      required: [id, status, daily_budget_minor, currency]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [prepared, active, paused, archived] }
+        daily_budget_minor: { type: integer, minimum: 0 }
+        currency: { type: string }
+        sender_status: { type: string }
+        verified_contacts: { type: integer, minimum: 0 }
+security:
+  - bearerAuth: []

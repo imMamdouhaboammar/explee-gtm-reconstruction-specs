@@ -1,0 +1,128 @@
+{
+  "_notice": "Synthetic, shortened fixture inspired by public UI observations of Jedar. No contact email, session token or provider credential is included.",
+  "project": {
+    "id": "preview_demo_jedar",
+    "input_kind": "domain",
+    "domain": "jedar-agency.com",
+    "status": "preview_ready",
+    "cached": true,
+    "company": {
+      "name": "JEDAR",
+      "display_name_ar": "جدار",
+      "country": "SA",
+      "description": "Saudi agency providing media crisis response and digital reputation services",
+      "founded_year_estimate": 2024,
+      "employee_count_estimate": 6,
+      "estimate_status": "third_party_unverified",
+      "keywords": [
+        "crisis management",
+        "media reputation",
+        "digital monitoring",
+        "corporate communications"
+      ]
+    },
+    "competitor_domains": [
+      "askolly.io",
+      "reptt.nl",
+      "wizikey.com",
+      "reputation.com"
+    ],
+    "segments": [
+      {
+        "id": "segment_founder_smb",
+        "label": "Founder-led SMBs",
+        "buyer_type": "company",
+        "geography": ["SA"],
+        "estimated_accounts": 1200,
+        "estimate_label": "estimated",
+        "pain": "A small team cannot handle a reputational incident alone",
+        "criteria": ["Public-facing founder", "Lean marketing team", "Direct customer relationships"],
+        "exclusions": ["Existing large corporate PR team", "No meaningful public footprint"],
+        "decision_maker_brief": "Founders directly accountable for reputation and public response",
+        "version": 1
+      },
+      {
+        "id": "segment_retail",
+        "label": "Retail chains",
+        "buyer_type": "company",
+        "geography": ["SA"],
+        "estimated_accounts": 2400,
+        "estimate_label": "estimated",
+        "criteria": ["Multi-branch operation", "Public customer feedback"],
+        "exclusions": ["Low customer-facing presence"],
+        "version": 1
+      }
+    ],
+    "run": {
+      "id": "run_demo_founder_smb",
+      "status": "completed",
+      "reused": true,
+      "accounts_found": 7,
+      "people_found": 2,
+      "verified_emails": 0
+    },
+    "example_accounts": [
+      {
+        "id": "company_olive",
+        "name": "Olive",
+        "domain": "olive.sa",
+        "country": "SA",
+        "fit_status": "uncertain",
+        "employee_estimate": 100,
+        "monthly_traffic_estimate": null,
+        "data_confidence": "low"
+      },
+      {
+        "id": "company_najm",
+        "name": "NAJM ALGHTHA",
+        "domain": "najm-alghtha.com",
+        "country": "SA",
+        "fit_status": "uncertain",
+        "employee_estimate": 60,
+        "monthly_traffic_estimate": 309,
+        "data_confidence": "low"
+      },
+      {
+        "id": "company_alfahim",
+        "name": "Al Fahim",
+        "domain": "alfahimhq.com",
+        "country": "AE",
+        "fit_status": "excluded",
+        "fit_reasons": ["Outside strict Saudi Arabia target"],
+        "employee_estimate": 20,
+        "monthly_traffic_estimate": 4570,
+        "data_confidence": "low"
+      }
+    ],
+    "example_people": [
+      {
+        "id": "person_1",
+        "name": "Sample Founder A",
+        "company_id": "company_najm",
+        "title": "CEO and founding partner",
+        "contact_status": "not_found",
+        "role_confidence": "unknown"
+      },
+      {
+        "id": "person_2",
+        "name": "Sample Founder B",
+        "company_id": "company_alfahim",
+        "title": "Founder",
+        "contact_status": "not_found",
+        "role_confidence": "unknown"
+      }
+    ],
+    "draft_preview": {
+      "id": "draft_demo_1",
+      "person_id": "person_1",
+      "subject": "A thought on protecting several brands",
+      "body": "Hi, I noticed your team manages several customer-facing brands. When feedback spreads across channels, keeping responses coordinated can be difficult. We help teams monitor reputation signals and prepare responses. Would a short example be useful?",
+      "language": "en",
+      "language_reason": "English-language professional context in this sample",
+      "evidence_refs": ["company_profile_demo"],
+      "version": 1,
+      "send_eligible": false,
+      "send_blockers": ["CONTACT_UNVERIFIED", "AUTHORIZATION_REQUIRED"]
+    }
+  }
+}
