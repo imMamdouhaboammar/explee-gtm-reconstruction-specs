@@ -1,0 +1,17 @@
+{
+  "name": "explee-gtm-reconstruction-specs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Clean-room technical architecture, reverse-engineering analysis, and reconstruction specifications for an autonomous Go-To-Market (Auto-GTM) engine.",
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "lint:openapi": "bun run scripts/validate-openapi.ts",
+    "lint": "bun run lint:openapi",
+    "validate": "bun run lint && bun run test"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "js-yaml": "^4.1.0"
+  }
+}
