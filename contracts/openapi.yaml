@@ -5,15 +5,25 @@ info:
   description: >-
     Proposed clean-room contract for an independently implemented B2B prospecting
     and outreach product. These endpoints are not Explee's private API.
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
 servers:
-  - url: https://api.example.com
-    description: Placeholder production origin
+  - url: https://api.prepilot-system-agency.space
+    description: Production API gateway
+  - url: https://api.autogtm-engine.io
+    description: Clean-room reference gateway
 tags:
   - name: Preview
+    description: URL analysis, company research, and interactive preview funnel operations
   - name: Discovery
+    description: Prospect account and decision-maker discovery operations
   - name: Drafts
+    description: Multi-channel personalized outreach message generation
   - name: Campaigns
+    description: Prospecting campaign management, activation, and performance tracking
   - name: Webhooks
+    description: Real-time asynchronous event notifications and status callbacks
 paths:
   /v1/company-search:
     post:
@@ -118,6 +128,8 @@ paths:
           content:
             text/event-stream:
               schema: { type: string }
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/previews/{previewId}/segments:
     get:
       tags: [Preview]
@@ -138,6 +150,8 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Segment'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/previews/{previewId}/segments/{segmentId}/discover:
     post:
       tags: [Discovery]
@@ -162,6 +176,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DiscoveryRun'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /v1/runs/{runId}/accounts:
     get:
       tags: [Discovery]
@@ -186,6 +204,8 @@ paths:
                       $ref: '#/components/schemas/ProspectAccount'
                   next_cursor: { type: [string, 'null'] }
                   has_more: { type: boolean }
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/runs/{runId}/people:
     get:
       tags: [Discovery]
@@ -210,6 +230,8 @@ paths:
                       $ref: '#/components/schemas/Person'
                   next_cursor: { type: [string, 'null'] }
                   has_more: { type: boolean }
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/previews/{previewId}/drafts:
     post:
       tags: [Drafts]
@@ -236,6 +258,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Draft'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /v1/drafts/{draftId}:
     patch:
       tags: [Drafts]
@@ -295,6 +321,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Campaign'
+        '422':
+          $ref: '#/components/responses/ValidationError'
   /v1/campaigns/{campaignId}/activate:
     post:
       tags: [Campaigns]
@@ -322,6 +350,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Campaign'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '409':
           description: Preconditions fail, return specific failed checks
         '402':
@@ -342,6 +372,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Campaign'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/campaigns/{campaignId}/overview:
     get:
       tags: [Campaigns]
@@ -366,6 +398,8 @@ paths:
                   booked_meetings: { type: integer }
                   spend_minor: { type: integer }
                   currency: { type: string }
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/webhooks/billing:
     post:
       tags: [Webhooks]

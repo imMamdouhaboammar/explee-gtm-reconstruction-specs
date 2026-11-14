@@ -23,7 +23,7 @@ Comprehensive, clean-room technical architecture, reverse-engineering analysis, 
 | [09_EVIDENCE_LEDGER.md](09_EVIDENCE_LEDGER.md) | Evidence Ledger | Strict categorization of observed facts vs. architectural inferences |
 | [10_IMPLEMENTATION_PLAN.md](10_IMPLEMENTATION_PLAN.md) | Delivery Roadmap | Phased release strategy (R0 to R7) and dependency map |
 | [11_BUILD_AGENT_PROMPT.md](11_BUILD_AGENT_PROMPT.md) | Build Agent System Prompt | Operational prompt for autonomous implementation agents |
-| [contracts/openapi.yaml](contracts/openapi.yaml) | API Specification | OpenAPI 3.0 contract definition |
+| [contracts/openapi.yaml](contracts/openapi.yaml) | API Specification | OpenAPI 3.1 contract definition |
 | [contracts/example-project.json](contracts/example-project.json) | Data Schema Sample | Representative pipeline state snapshot |
 
 ---
